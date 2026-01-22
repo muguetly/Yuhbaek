@@ -1,6 +1,6 @@
-package com.example.Yuhbaek.repository.Book;
+package com.example.Yuhbaek.repository.book;
 
-import com.example.Yuhbaek.entity.Book.AllBook;
+import com.example.Yuhbaek.entity.book.AllBook;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

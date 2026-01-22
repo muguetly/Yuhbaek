@@ -1,4 +1,4 @@
-package com.example.Yuhbaek.config.Book;
+package com.example.Yuhbaek.config.book;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

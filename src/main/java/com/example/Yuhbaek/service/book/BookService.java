@@ -1,9 +1,9 @@
-package com.example.Yuhbaek.service.Book;
+package com.example.Yuhbaek.service.book;
 
-import com.example.Yuhbaek.client.Book.KakaoBookClient;
-import com.example.Yuhbaek.dto.Book.*;
-import com.example.Yuhbaek.entity.Book.AllBook;
-import com.example.Yuhbaek.repository.Book.BookRepository;
+import com.example.Yuhbaek.client.book.KakaoBookClient;
+import com.example.Yuhbaek.dto.book.*;
+import com.example.Yuhbaek.entity.book.AllBook;
+import com.example.Yuhbaek.repository.book.BookRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

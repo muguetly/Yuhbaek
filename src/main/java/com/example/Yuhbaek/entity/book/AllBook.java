@@ -1,4 +1,4 @@
-package com.example.Yuhbaek.entity.Book;
+package com.example.Yuhbaek.entity.book;
 
 import jakarta.persistence.*;
 import lombok.Getter;

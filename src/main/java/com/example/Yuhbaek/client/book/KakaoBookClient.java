@@ -1,6 +1,6 @@
-package com.example.Yuhbaek.client.Book;
+package com.example.Yuhbaek.client.book;
 
-import com.example.Yuhbaek.dto.Book.KakaoBookSearchApiResponse;
+import com.example.Yuhbaek.dto.book.KakaoBookSearchApiResponse;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 

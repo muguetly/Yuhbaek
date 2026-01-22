@@ -1,4 +1,4 @@
-package com.example.Yuhbaek.dto.Book;
+package com.example.Yuhbaek.dto.book;
 
 import jakarta.validation.constraints.NotBlank;
 
