@@ -41,6 +41,10 @@ public class UserEntity {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean surveyCompleted = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
