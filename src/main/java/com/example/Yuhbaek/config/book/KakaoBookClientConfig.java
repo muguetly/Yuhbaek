@@ -1,6 +1,6 @@
-package com.example.Yuhbaek.config.Book;
+package com.example.Yuhbaek.config.book;
 
-import com.example.Yuhbaek.client.Book.KakaoBookClient;
+import com.example.Yuhbaek.client.book.KakaoBookClient;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,8 +1,8 @@
-package com.example.Yuhbaek.controller.Book;
+package com.example.Yuhbaek.controller.book;
 
-import com.example.Yuhbaek.dto.Book.BookSaveRequest;
-import com.example.Yuhbaek.dto.Book.BookSearchResponse;
-import com.example.Yuhbaek.service.Book.BookService;
+import com.example.Yuhbaek.dto.book.BookSaveRequest;
+import com.example.Yuhbaek.dto.book.BookSearchResponse;
+import com.example.Yuhbaek.service.book.BookService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
