@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface BookRepository extends JpaRepository<Book, Long> {
+public interface HomeBookRepository extends JpaRepository<Book, Long> {
 
     Optional<Book> findByIsbn(String isbn);
 
     boolean existsByIsbn(String isbn);
 
-    @Query("SELECT b FROM Book b WHERE b.title LIKE %:keyword% OR " +
-            "EXISTS (SELECT 1 FROM b.authors a WHERE a LIKE %:keyword%)")
+    @Query("SELECT DISTINCT b FROM Book b LEFT JOIN b.authors a " +
+            "WHERE b.title LIKE CONCAT('%', :keyword, '%') OR a LIKE CONCAT('%', :keyword, '%')")
     List<Book> searchByKeyword(@Param("keyword") String keyword);
 
     @Query("SELECT b FROM Book b WHERE b.publisher = :publisher")

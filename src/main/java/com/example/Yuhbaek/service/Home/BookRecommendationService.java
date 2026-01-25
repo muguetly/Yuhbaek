@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class BookRecommendationService {
 
-    private final BookService bookService;
+    private final BookSearchService bookSearchService;
     private final UserRepository userRepository;
     private final UserPreferenceRepository preferenceRepository;
 
@@ -108,7 +108,7 @@ public class BookRecommendationService {
                             .sort("accuracy")
                             .build();
 
-                    BookSearchResponse searchResponse = bookService.searchBooks(searchRequest);
+                    BookSearchResponse searchResponse = bookSearchService.searchBooks(searchRequest);
 
                     // 검색 결과를 추천 책으로 변환
                     List<RecommendedBook> genreBooks = searchResponse.getBooks().stream()
@@ -220,7 +220,7 @@ public class BookRecommendationService {
                         .sort("accuracy")
                         .build();
 
-                BookSearchResponse searchResponse = bookService.searchBooks(searchRequest);
+                BookSearchResponse searchResponse = bookSearchService.searchBooks(searchRequest);
 
                 List<RecommendedBook> books = searchResponse.getBooks().stream()
                         .map(book -> RecommendedBook.builder()

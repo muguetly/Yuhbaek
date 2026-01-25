@@ -3,9 +3,12 @@ package com.example.Yuhbaek.service.Home;
 import com.example.Yuhbaek.config.Home.KakaoApiConfig;
 import com.example.Yuhbaek.dto.Home.*;
 import com.example.Yuhbaek.entity.Home.Book;
-import com.example.Yuhbaek.repository.Home.BookRepository;
+import com.example.Yuhbaek.entity.Home.SearchKeyword;
+import com.example.Yuhbaek.repository.Home.HomeBookRepository;
+import com.example.Yuhbaek.repository.Home.SearchKeywordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -19,17 +22,21 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BookService {
+public class BookSearchService {
 
     private final WebClient webClient;
     private final KakaoApiConfig kakaoApiConfig;
-    private final BookRepository bookRepository;
+    private final HomeBookRepository homeBookRepository;
+    private final SearchKeywordRepository searchKeywordRepository;
 
     /**
      * 카카오 API로 책 검색
      */
     public BookSearchResponse searchBooks(BookSearchRequest request) {
         try {
+            // 검색어 저장/업데이트
+            saveSearchKeyword(request.getQuery());
+
             // 카카오 API 호출
             KakaoBookSearchResponse kakaoResponse = webClient.get()
                     .uri(uriBuilder -> uriBuilder
@@ -82,7 +89,7 @@ public class BookService {
     @Transactional(readOnly = true)
     public BookResponse getBookByIsbn(String isbn) {
         // DB에서 먼저 조회
-        return bookRepository.findByIsbn(isbn)
+        return homeBookRepository.findByIsbn(isbn)
                 .map(this::convertEntityToResponse)
                 .orElseGet(() -> {
                     // DB에 없으면 카카오 API로 검색
@@ -110,8 +117,8 @@ public class BookService {
         String isbn = extractIsbn(kakaoBook.getIsbn());
 
         // 이미 존재하는 경우 기존 데이터 반환
-        if (bookRepository.existsByIsbn(isbn)) {
-            return bookRepository.findByIsbn(isbn).get();
+        if (homeBookRepository.existsByIsbn(isbn)) {
+            return homeBookRepository.findByIsbn(isbn).get();
         }
 
         Book book = Book.builder()
@@ -127,7 +134,7 @@ public class BookService {
                 .url(kakaoBook.getUrl())
                 .build();
 
-        Book savedBook = bookRepository.save(book);
+        Book savedBook = homeBookRepository.save(book);
         log.info("책 정보 저장 완료 - ISBN: {}, 제목: {}", isbn, book.getTitle());
 
         return savedBook;
@@ -197,5 +204,63 @@ public class BookService {
             log.warn("날짜 파싱 실패: {}", dateString);
             return null;
         }
+    }
+
+    /**
+     * 검색어 저장/업데이트
+     */
+    @Transactional
+    public void saveSearchKeyword(String keyword) {
+        try {
+            SearchKeyword searchKeyword = searchKeywordRepository.findByKeyword(keyword)
+                    .orElse(SearchKeyword.builder()
+                            .keyword(keyword)
+                            .searchCount(0)
+                            .build());
+
+            searchKeyword.incrementSearchCount();
+            searchKeywordRepository.save(searchKeyword);
+
+            log.debug("검색어 저장/업데이트: {}, 검색 횟수: {}", keyword, searchKeyword.getSearchCount());
+        } catch (Exception e) {
+            log.warn("검색어 저장 실패: {}", keyword, e);
+        }
+    }
+
+    /**
+     * 인기 검색어 조회
+     */
+    @Transactional(readOnly = true)
+    public List<SearchKeywordResponse> getPopularKeywords(int limit) {
+        List<SearchKeyword> keywords = searchKeywordRepository
+                .findTopBySearchCount(PageRequest.of(0, limit));
+
+        return keywords.stream()
+                .map(this::convertToKeywordResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 최신 검색어 조회
+     */
+    @Transactional(readOnly = true)
+    public List<SearchKeywordResponse> getRecentKeywords(int limit) {
+        List<SearchKeyword> keywords = searchKeywordRepository
+                .findTopByLastSearchedAt(PageRequest.of(0, limit));
+
+        return keywords.stream()
+                .map(this::convertToKeywordResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * SearchKeyword -> SearchKeywordResponse 변환
+     */
+    private SearchKeywordResponse convertToKeywordResponse(SearchKeyword keyword) {
+        return SearchKeywordResponse.builder()
+                .keyword(keyword.getKeyword())
+                .searchCount(keyword.getSearchCount())
+                .lastSearchedAt(keyword.getLastSearchedAt())
+                .build();
     }
 }
