@@ -95,6 +95,7 @@ public class UserController {
             response.put("nickname", user.getNickname());
             response.put("email", user.getEmail());
             response.put("role", user.getRole());
+            response.put("surveyCompleted", user.isSurveyCompleted());  // ⭐ 추가
 
             return ResponseEntity.ok(response);
 
