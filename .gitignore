@@ -36,5 +36,6 @@ out/
 ### VS Code ###
 .vscode/
 
-# application.properties 제외
+# Spring Boot config
 application.properties
+application-*.properties
