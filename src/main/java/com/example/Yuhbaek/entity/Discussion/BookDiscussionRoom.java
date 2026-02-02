@@ -1,6 +1,8 @@
 package com.example.Yuhbaek.entity.Discussion;
 
 import com.example.Yuhbaek.entity.SignUp.UserEntity;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -56,6 +58,10 @@ public class BookDiscussionRoom {
     @Column(nullable = false)
     private DiscussionStatus status = DiscussionStatus.WAITING;
 
+    // ✅ 새로 추가: 대화 규칙/스타일 (최소 1개, 최대 4개)
+    @Column(columnDefinition = "JSON")
+    private String discussionRules;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id", nullable = false)
     private UserEntity host;
@@ -81,6 +87,39 @@ public class BookDiscussionRoom {
         WAITING,     // 대기 중 (시작 시간 전 또는 준비 중)
         IN_PROGRESS, // 진행 중 (시작됨)
         FINISHED     // 종료됨
+    }
+
+    /**
+     * ✅ 대화 규칙 설정 메서드
+     */
+    public void setDiscussionRules(List<String> rules) {
+        if (rules == null || rules.isEmpty()) {
+            throw new IllegalArgumentException("대화 규칙은 최소 1개 이상 설정해야 합니다");
+        }
+        if (rules.size() > 4) {
+            throw new IllegalArgumentException("대화 규칙은 최대 4개까지 설정 가능합니다");
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            this.discussionRules = objectMapper.writeValueAsString(rules);
+        } catch (Exception e) {
+            throw new RuntimeException("규칙 변환 중 오류 발생", e);
+        }
+    }
+
+    /**
+     * ✅ 대화 규칙 조회 메서드
+     */
+    public List<String> getDiscussionRulesList() {
+        if (discussionRules == null || discussionRules.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(discussionRules, new TypeReference<List<String>>() {});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 
     /**

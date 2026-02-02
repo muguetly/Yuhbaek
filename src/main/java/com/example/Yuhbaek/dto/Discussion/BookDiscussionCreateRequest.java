@@ -5,6 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -52,4 +53,12 @@ public class BookDiscussionCreateRequest {
 
     @Schema(description = "방장 사용자 ID (시스템에서 자동 설정)")
     private Long hostId;
+
+    // ✅ 새로 추가: 대화 규칙/스타일
+    @Schema(description = "대화 분위기/규칙/스타일 (최소 1개, 최대 4개)",
+            example = "[\"존댓말 사용\", \"비판 금지\", \"자유로운 분위기\"]",
+            required = true)
+    @NotNull(message = "대화 규칙은 필수입니다")
+    @Size(min = 1, max = 4, message = "대화 규칙은 최소 1개, 최대 4개까지 설정 가능합니다")
+    private List<@NotBlank(message = "규칙은 빈 값일 수 없습니다") String> discussionRules;
 }
