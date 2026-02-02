@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -46,6 +47,10 @@ public class BookDiscussionRoomResponse {
 
     @Schema(description = "토론방 상태", example = "WAITING")
     private String status;
+
+    // ✅ 새로 추가: 대화 규칙/스타일
+    @Schema(description = "대화 분위기/규칙/스타일", example = "[\"존댓말 사용\", \"비판 금지\", \"자유로운 분위기\"]")
+    private List<String> discussionRules;
 
     @Schema(description = "방장 정보")
     private HostInfo host;

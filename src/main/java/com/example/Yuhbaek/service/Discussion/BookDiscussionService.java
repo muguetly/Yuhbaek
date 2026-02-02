@@ -53,6 +53,9 @@ public class BookDiscussionService {
                 .host(host)
                 .build();
 
+        // ✅ 대화 규칙 설정
+        discussionRoom.setDiscussionRules(request.getDiscussionRules());
+
         BookDiscussionRoom savedRoom = discussionRoomRepository.save(discussionRoom);
 
         // 방장을 참여자로 자동 추가
@@ -74,8 +77,18 @@ public class BookDiscussionService {
                 .build();
         messageRepository.save(systemMessage);
 
-        log.info("토론방 생성 완료 - ID: {}, 도서: {}, 방장: {}",
-                savedRoom.getId(), savedRoom.getBookTitle(), host.getUserId());
+        // ✅ 규칙 안내 메시지 추가
+        String rulesMessage = "📌 이 토론방의 규칙: " + String.join(", ", request.getDiscussionRules());
+        DiscussionMessage rulesSystemMessage = DiscussionMessage.builder()
+                .discussionRoom(savedRoom)
+                .user(host)
+                .type(DiscussionMessage.MessageType.SYSTEM)
+                .content(rulesMessage)
+                .build();
+        messageRepository.save(rulesSystemMessage);
+
+        log.info("토론방 생성 완료 - ID: {}, 도서: {}, 방장: {}, 규칙: {}",
+                savedRoom.getId(), savedRoom.getBookTitle(), host.getUserId(), request.getDiscussionRules());
 
         return convertToResponse(savedRoom);
     }
@@ -447,6 +460,7 @@ public class BookDiscussionService {
                 .currentParticipants(discussionRoom.getCurrentParticipants())
                 .discussionStartTime(discussionRoom.getDiscussionStartTime())
                 .status(discussionRoom.getStatus().name())
+                .discussionRules(discussionRoom.getDiscussionRulesList())  // ✅ 규칙 추가
                 .host(BookDiscussionRoomResponse.HostInfo.builder()
                         .id(discussionRoom.getHost().getId())
                         .userId(discussionRoom.getHost().getUserId())
