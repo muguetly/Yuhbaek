@@ -1,9 +1,11 @@
 package com.example.Yuhbaek.controller.SignUp;
 
+import com.example.Yuhbaek.dto.SignUp.*;
+import com.example.Yuhbaek.entity.SignUp.UserEntity;
+import com.example.Yuhbaek.service.SignUp.EmailService;
+import com.example.Yuhbaek.service.SignUp.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,10 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.Yuhbaek.dto.SignUp.JoinRequest;
-import com.example.Yuhbaek.dto.SignUp.LoginRequest;
-import com.example.Yuhbaek.entity.SignUp.UserEntity;
-import com.example.Yuhbaek.service.SignUp.UserService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +28,76 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final EmailService emailService;
+
+    /**
+     * 이메일 인증번호 발송
+     */
+    @Operation(summary = "이메일 인증번호 발송", description = "회원가입을 위한 이메일 인증번호를 발송합니다")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "인증번호 발송 성공"),
+            @ApiResponse(responseCode = "400", description = "이미 사용 중인 이메일")
+    })
+    @PostMapping("/email/send-code")
+    public ResponseEntity<?> sendVerificationCode(
+            @Parameter(description = "이메일 정보", required = true)
+            @Valid @RequestBody EmailVerificationRequest request) {
+
+        // 이메일 중복 체크
+        if (!userService.isEmailAvailable(request.getEmail())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "이미 사용 중인 이메일입니다");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        try {
+            emailService.sendAuthEmail(request.getEmail());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "인증번호가 발송되었습니다");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("인증번호 발송 실패: {}", e.getMessage());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "인증번호 발송에 실패했습니다");
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    /**
+     * 이메일 인증번호 확인
+     */
+    @Operation(summary = "이메일 인증번호 확인", description = "발송된 인증번호를 확인합니다")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "인증 성공"),
+            @ApiResponse(responseCode = "400", description = "인증 실패 (인증번호 불일치 또는 만료)")
+    })
+    @PostMapping("/email/verify-code")
+    public ResponseEntity<?> verifyCode(
+            @Parameter(description = "이메일 인증 확인 정보", required = true)
+            @Valid @RequestBody EmailVerificationCheckRequest request) {
+
+        boolean isVerified = emailService.verifyAuthCode(request.getEmail(), request.getCode());
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (isVerified) {
+            response.put("success", true);
+            response.put("message", "이메일 인증이 완료되었습니다");
+            return ResponseEntity.ok(response);
+        } else {
+            response.put("success", false);
+            response.put("message", "인증번호가 일치하지 않거나 만료되었습니다");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
 
     /**
      * 회원가입
@@ -95,7 +163,7 @@ public class UserController {
             response.put("nickname", user.getNickname());
             response.put("email", user.getEmail());
             response.put("role", user.getRole());
-            response.put("surveyCompleted", user.isSurveyCompleted());  // ⭐ 추가
+            response.put("surveyCompleted", user.isSurveyCompleted());
 
             return ResponseEntity.ok(response);
 
