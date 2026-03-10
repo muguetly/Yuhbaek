@@ -11,16 +11,16 @@ public interface ThinkingStyleScoreRepository extends JpaRepository<ThinkingStyl
 
     @Query("""
         SELECT
-            AVG(t.critic),
-            AVG(t.emotion),
-            AVG(t.analysis),
-            AVG(t.empathy),
-            AVG(t.creative)
+            AVG(t.critic)  as critic,
+            AVG(t.emotion) as emotion,
+            AVG(t.analysis) as analysis,
+            AVG(t.empathy) as empathy,
+            AVG(t.creative) as creative
         FROM ThinkingStyleScore t
         WHERE t.userId = :userId
           AND t.createdAt BETWEEN :start AND :end
     """)
-    Object[] avgScores(
+    ThinkingStyleAvgRow avgScores(
             @Param("userId") Long userId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end

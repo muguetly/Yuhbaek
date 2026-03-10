@@ -10,7 +10,7 @@ import java.util.List;
 
 public interface EmotionLogRepository extends JpaRepository<EmotionLog, Long> {
 
-    // ✅ (A) 감정 선택 → 장르 분포
+    // (A) 감정 선택 → 장르 분포
     @Query("""
         SELECT 
             COALESCE(b.genre, '기타') as genre,
@@ -31,7 +31,7 @@ public interface EmotionLogRepository extends JpaRepository<EmotionLog, Long> {
             @Param("end") LocalDateTime end
     );
 
-    // ✅ (B) 장르 선택 → 감정 분포
+    // (B) 장르 선택 → 감정 분포
     @Query("""
         SELECT 
             e.emotionId as emotionId,
@@ -50,5 +50,12 @@ public interface EmotionLogRepository extends JpaRepository<EmotionLog, Long> {
             @Param("genre") String genre,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
+    );
+
+    boolean existsByUserIdAndRoomIdAndSelectedAtBetween(
+            Long userId,
+            Long roomId,
+            LocalDateTime start,
+            LocalDateTime end
     );
 }

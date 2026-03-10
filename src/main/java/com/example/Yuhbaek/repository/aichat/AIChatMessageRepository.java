@@ -8,8 +8,10 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface AIChatMessageRepository extends JpaRepository<AIChatMessage, Long> {
+
     List<AIChatMessage> findByRoomIdOrderByCreatedAtDesc(Long roomId, Pageable pageable);
 
     @Query("""
@@ -27,12 +29,18 @@ public interface AIChatMessageRepository extends JpaRepository<AIChatMessage, Lo
       AND m.createdAt BETWEEN :start AND :end
     GROUP BY HOUR(m.createdAt)
     ORDER BY HOUR(m.createdAt)
-    
-""")
+    """)
     List<Object[]> aggregateUserActivityByHour(
             @Param("userId") Long userId,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
 
+    // ✅ id -> messageId 로 변경
+    Optional<AIChatMessage> findTopByRoomIdOrderByMessageIdDesc(Long roomId);
+
+    // ✅ id -> messageId 로 변경
+    List<AIChatMessage> findByRoomIdAndMessageIdGreaterThanAndMessageIdLessThanEqualOrderByMessageIdAsc(
+            Long roomId, Long startExclusive, Long endInclusive
+    );
 }
