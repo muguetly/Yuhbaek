@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -33,6 +34,11 @@ public class UserEntity {
 
     @Column(unique = true, nullable = false, length = 20)
     private String nickname;
+
+    // ===== 프로필 이미지 추가 =====
+    @Column(length = 500)
+    private String profileImage;
+    // =============================
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -64,6 +70,31 @@ public class UserEntity {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    // ===== 비즈니스 메서드 추가 =====
+
+    /**
+     * 프로필 이미지 변경
+     */
+    public void updateProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    /**
+     * 닉네임 변경
+     */
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    /**
+     * 비밀번호 변경
+     */
+    public void updatePassword(String password) {
+        this.password = password;
+    }
+
+    // ================================
 
     public enum UserRole {
         USER, ADMIN

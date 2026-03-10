@@ -17,12 +17,18 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService; // ⭐ 추가
 
     /**
      * 회원가입
      */
     @Transactional
     public UserEntity join(JoinRequest request) {
+        // ⭐ 이메일 인증 확인
+        if (!emailService.isEmailVerified(request.getEmail())) {
+            throw new IllegalArgumentException("이메일 인증이 완료되지 않았습니다");
+        }
+
         // 비밀번호 확인
         if (!request.getPassword().equals(request.getPasswordConfirm())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다");
