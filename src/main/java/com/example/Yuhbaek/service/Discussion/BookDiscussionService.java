@@ -4,11 +4,13 @@ import com.example.Yuhbaek.dto.Discussion.*;
 import com.example.Yuhbaek.entity.Discussion.BookDiscussionRoom;
 import com.example.Yuhbaek.entity.Discussion.DiscussionMessage;
 import com.example.Yuhbaek.entity.Discussion.DiscussionParticipant;
+import com.example.Yuhbaek.entity.MyPage.UserReadCompletion.CompletionType;
 import com.example.Yuhbaek.entity.SignUp.UserEntity;
 import com.example.Yuhbaek.repository.Discussion.BookDiscussionRoomRepository;
 import com.example.Yuhbaek.repository.Discussion.DiscussionMessageRepository;
 import com.example.Yuhbaek.repository.Discussion.DiscussionParticipantRepository;
 import com.example.Yuhbaek.repository.SignUp.UserRepository;
+import com.example.Yuhbaek.service.MyPage.ReadCompletionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
@@ -28,6 +30,7 @@ public class BookDiscussionService {
     private final DiscussionMessageRepository messageRepository;
     private final UserRepository userRepository;
     private final SimpMessageSendingOperations messagingTemplate;
+    private final ReadCompletionService readCompletionService; // ✅ 완독 서비스 추가
 
     /**
      * 토론방 생성
@@ -64,7 +67,7 @@ public class BookDiscussionService {
                 .user(host)
                 .role(DiscussionParticipant.ParticipantRole.HOST)
                 .isActive(true)
-                .isReady(false)  // ✅ 초기 준비 상태: false
+                .isReady(false)
                 .build();
         participantRepository.save(hostParticipant);
 
@@ -101,7 +104,7 @@ public class BookDiscussionService {
         List<BookDiscussionRoom> rooms = discussionRoomRepository.findActiveRooms();
 
         return rooms.stream()
-                .peek(BookDiscussionRoom::updateStatus) // 상태 자동 업데이트
+                .peek(BookDiscussionRoom::updateStatus)
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -111,15 +114,13 @@ public class BookDiscussionService {
      */
     @Transactional
     public List<BookDiscussionRoomResponse> getInProgressRooms() {
-        List<BookDiscussionRoom> rooms = discussionRoomRepository.findAll(); // 모든 방 조회
+        List<BookDiscussionRoom> rooms = discussionRoomRepository.findAll();
 
-        // 상태 업데이트 및 DB 저장
         rooms.forEach(room -> {
             room.updateStatus();
             discussionRoomRepository.save(room);
         });
 
-        // IN_PROGRESS인 방만 필터링
         return rooms.stream()
                 .filter(room -> room.getStatus() == BookDiscussionRoom.DiscussionStatus.IN_PROGRESS)
                 .map(this::convertToResponse)
@@ -159,7 +160,7 @@ public class BookDiscussionService {
         BookDiscussionRoom discussionRoom = discussionRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("토론방을 찾을 수 없습니다"));
 
-        discussionRoom.updateStatus(); // 상태 업데이트
+        discussionRoom.updateStatus();
 
         return convertToResponse(discussionRoom);
     }
@@ -175,39 +176,32 @@ public class BookDiscussionService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        // 상태 업데이트
         discussionRoom.updateStatus();
 
-        // 이미 참여 중인지 확인
         if (participantRepository.findByDiscussionRoomAndUserAndIsActiveTrue(discussionRoom, user).isPresent()) {
             throw new IllegalStateException("이미 참여 중인 토론방입니다");
         }
 
-        // 방이 가득 찼는지 확인
         if (discussionRoom.isFull()) {
             throw new IllegalStateException("토론방 인원이 가득 찼습니다");
         }
 
-        // 종료된 방인지 확인
         if (discussionRoom.getStatus() == BookDiscussionRoom.DiscussionStatus.FINISHED) {
             throw new IllegalStateException("종료된 토론방입니다");
         }
 
-        // 참여자 추가
         DiscussionParticipant participant = DiscussionParticipant.builder()
                 .discussionRoom(discussionRoom)
                 .user(user)
                 .role(DiscussionParticipant.ParticipantRole.MEMBER)
                 .isActive(true)
-                .isReady(false)  // ✅ 초기 준비 상태: false
+                .isReady(false)
                 .build();
         participantRepository.save(participant);
 
-        // 참여 인원 증가
         discussionRoom.incrementParticipants();
         discussionRoomRepository.save(discussionRoom);
 
-        // 입장 메시지 추가
         DiscussionMessage enterMessage = DiscussionMessage.builder()
                 .discussionRoom(discussionRoom)
                 .user(user)
@@ -232,20 +226,16 @@ public class BookDiscussionService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        // 참여자 정보 조회
         DiscussionParticipant participant = participantRepository
                 .findByDiscussionRoomAndUserAndIsActiveTrue(discussionRoom, user)
                 .orElseThrow(() -> new IllegalStateException("참여하지 않은 토론방입니다"));
 
-        // 참여자 퇴장 처리
         participant.leave();
         participantRepository.save(participant);
 
-        // 참여 인원 감소
         discussionRoom.decrementParticipants();
         discussionRoomRepository.save(discussionRoom);
 
-        // 퇴장 메시지 추가
         DiscussionMessage leaveMessage = DiscussionMessage.builder()
                 .discussionRoom(discussionRoom)
                 .user(user)
@@ -265,7 +255,6 @@ public class BookDiscussionService {
         BookDiscussionRoom discussionRoom = discussionRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("토론방을 찾을 수 없습니다"));
 
-        // 방장인지 확인
         if (!discussionRoom.getHost().getId().equals(userId)) {
             throw new IllegalStateException("방장만 토론방을 삭제할 수 있습니다");
         }
@@ -308,7 +297,7 @@ public class BookDiscussionService {
     }
 
     /**
-     * ✅ 준비 상태 토글
+     * 준비 상태 토글
      */
     @Transactional
     public ParticipantReadyResponse toggleReady(Long roomId, Long userId) {
@@ -318,24 +307,20 @@ public class BookDiscussionService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        // 이미 시작된 토론방인지 확인
         if (discussionRoom.getStatus() == BookDiscussionRoom.DiscussionStatus.IN_PROGRESS) {
             throw new IllegalStateException("이미 시작된 토론방입니다");
         }
 
-        // 참여자 정보 조회
         DiscussionParticipant participant = participantRepository
                 .findByDiscussionRoomAndUserAndIsActiveTrue(discussionRoom, user)
                 .orElseThrow(() -> new IllegalStateException("참여하지 않은 토론방입니다"));
 
-        // 준비 상태 토글
         participant.toggleReady();
         participantRepository.save(participant);
 
         log.info("준비 상태 변경 - 토론방 ID: {}, 사용자: {}, 준비: {}",
                 roomId, user.getUserId(), participant.getIsReady());
 
-        // 준비 상태 메시지 전송 (WebSocket)
         String readyMessage = participant.getIsReady()
                 ? user.getNickname() + "님이 준비 완료했습니다."
                 : user.getNickname() + "님이 준비를 취소했습니다.";
@@ -348,17 +333,13 @@ public class BookDiscussionService {
                 .build();
         DiscussionMessage savedSystemMessage = messageRepository.save(systemMessage);
 
-        // WebSocket으로 브로드캐스트
         DiscussionMessageDto messageDto = convertToMessageDto(savedSystemMessage);
         messagingTemplate.convertAndSend("/topic/discussion/" + roomId, messageDto);
 
-        // 모든 참여자가 준비 완료되었는지 확인
         if (discussionRoom.areAllParticipantsReady()) {
-            // 자동 시작
             discussionRoom.updateStatus();
             discussionRoomRepository.save(discussionRoom);
 
-            // 시작 메시지 전송
             DiscussionMessage startMessage = DiscussionMessage.builder()
                     .discussionRoom(discussionRoom)
                     .user(user)
@@ -373,7 +354,6 @@ public class BookDiscussionService {
             log.info("모든 참여자 준비 완료 - 토론 자동 시작: {}", roomId);
         }
 
-        // 응답 생성
         return ParticipantReadyResponse.builder()
                 .userId(userId)
                 .nickname(user.getNickname())
@@ -384,28 +364,24 @@ public class BookDiscussionService {
     }
 
     /**
-     * ✅ 강제 시작 (방장 권한)
+     * 강제 시작 (방장 권한)
      */
     @Transactional
     public BookDiscussionRoomResponse forceStart(Long roomId, Long userId) {
         BookDiscussionRoom discussionRoom = discussionRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("토론방을 찾을 수 없습니다"));
 
-        // 방장 확인
         if (!discussionRoom.getHost().getId().equals(userId)) {
             throw new IllegalStateException("방장만 강제 시작할 수 있습니다");
         }
 
-        // 이미 시작된 토론방인지 확인
         if (discussionRoom.getStatus() == BookDiscussionRoom.DiscussionStatus.IN_PROGRESS) {
             throw new IllegalStateException("이미 시작된 토론방입니다");
         }
 
-        // 강제 시작
         discussionRoom.forceStart();
         discussionRoomRepository.save(discussionRoom);
 
-        // 시작 메시지 전송
         DiscussionMessage startMessage = DiscussionMessage.builder()
                 .discussionRoom(discussionRoom)
                 .user(discussionRoom.getHost())
@@ -423,7 +399,7 @@ public class BookDiscussionService {
     }
 
     /**
-     * ✅ 참여자 목록 및 준비 상태 조회
+     * 참여자 목록 및 준비 상태 조회
      */
     @Transactional(readOnly = true)
     public List<ParticipantDto> getParticipants(Long roomId) {
@@ -445,6 +421,64 @@ public class BookDiscussionService {
     }
 
     /**
+     * ✅ 토론방 종료 (방장만 가능) + 참여자 전원 완독 처리
+     */
+    @Transactional
+    public void finishDiscussionRoom(Long roomId, Long userId) {
+
+        BookDiscussionRoom discussionRoom = discussionRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("토론방을 찾을 수 없습니다"));
+
+        // 방장 확인
+        if (!discussionRoom.getHost().getId().equals(userId)) {
+            throw new IllegalStateException("방장만 토론방을 종료할 수 있습니다");
+        }
+
+        // 이미 종료된 방 확인
+        if (discussionRoom.getStatus() == BookDiscussionRoom.DiscussionStatus.FINISHED) {
+            throw new IllegalStateException("이미 종료된 토론방입니다");
+        }
+
+        // 토론방 종료
+        discussionRoom.finish();
+        discussionRoomRepository.save(discussionRoom);
+
+        // 종료 시스템 메시지
+        DiscussionMessage finishMessage = DiscussionMessage.builder()
+                .discussionRoom(discussionRoom)
+                .user(discussionRoom.getHost())
+                .type(DiscussionMessage.MessageType.SYSTEM)
+                .content("토론이 종료되었습니다.")
+                .build();
+        messageRepository.save(finishMessage);
+
+        // WebSocket 브로드캐스트
+        DiscussionMessageDto messageDto = convertToMessageDto(finishMessage);
+        messagingTemplate.convertAndSend("/topic/discussion/" + roomId, messageDto);
+
+        // 활성 참여자 전원 완독 처리 (ISBN 있을 때만)
+        if (discussionRoom.getBookIsbn() != null && !discussionRoom.getBookIsbn().isBlank()) {
+            List<DiscussionParticipant> participants =
+                    participantRepository.findByDiscussionRoomAndIsActiveTrue(discussionRoom);
+
+            participants.forEach(participant -> {
+                readCompletionService.markAsCompleted(
+                        participant.getUser().getId(),
+                        discussionRoom.getBookIsbn(),
+                        discussionRoom.getBookTitle(),
+                        discussionRoom.getBookAuthor(),
+                        discussionRoom.getBookCover(),
+                        CompletionType.GROUP_CHAT
+                );
+            });
+
+            log.info("토론방 종료 + 완독 처리 완료 - roomId: {}, 참여자 수: {}", roomId, participants.size());
+        } else {
+            log.warn("토론방에 ISBN 없음 - 완독 처리 생략. roomId: {}", roomId);
+        }
+    }
+
+    /**
      * Entity -> Response 변환
      */
     private BookDiscussionRoomResponse convertToResponse(BookDiscussionRoom discussionRoom) {
@@ -460,7 +494,7 @@ public class BookDiscussionService {
                 .currentParticipants(discussionRoom.getCurrentParticipants())
                 .discussionStartTime(discussionRoom.getDiscussionStartTime())
                 .status(discussionRoom.getStatus().name())
-                .discussionRules(discussionRoom.getDiscussionRulesList())  // ✅ 규칙 추가
+                .discussionRules(discussionRoom.getDiscussionRulesList())
                 .host(BookDiscussionRoomResponse.HostInfo.builder()
                         .id(discussionRoom.getHost().getId())
                         .userId(discussionRoom.getHost().getUserId())

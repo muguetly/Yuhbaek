@@ -28,14 +28,15 @@ public class BookSearchService {
     private final KakaoApiConfig kakaoApiConfig;
     private final HomeBookRepository homeBookRepository;
     private final SearchKeywordRepository searchKeywordRepository;
+    private final SearchKeywordService searchKeywordService; // 추가
 
     /**
      * 카카오 API로 책 검색
      */
     public BookSearchResponse searchBooks(BookSearchRequest request) {
         try {
-            // 검색어 저장/업데이트
-            saveSearchKeyword(request.getQuery());
+            // 검색어 저장/업데이트 (SearchKeywordService로 변경)
+            searchKeywordService.saveSearchKeyword(request.getQuery());
 
             // 카카오 API 호출
             KakaoBookSearchResponse kakaoResponse = webClient.get()
@@ -88,11 +89,9 @@ public class BookSearchService {
      */
     @Transactional(readOnly = true)
     public BookResponse getBookByIsbn(String isbn) {
-        // DB에서 먼저 조회
         return homeBookRepository.findByIsbn(isbn)
                 .map(this::convertEntityToResponse)
                 .orElseGet(() -> {
-                    // DB에 없으면 카카오 API로 검색
                     BookSearchRequest searchRequest = BookSearchRequest.builder()
                             .query(isbn)
                             .target("isbn")
@@ -116,7 +115,6 @@ public class BookSearchService {
     public Book saveBook(KakaoBookSearchResponse.Document kakaoBook) {
         String isbn = extractIsbn(kakaoBook.getIsbn());
 
-        // 이미 존재하는 경우 기존 데이터 반환
         if (homeBookRepository.existsByIsbn(isbn)) {
             return homeBookRepository.findByIsbn(isbn).get();
         }
@@ -186,7 +184,6 @@ public class BookSearchService {
         }
 
         String[] isbns = isbnString.split(" ");
-        // ISBN13이 있으면 우선 사용 (보통 두 번째)
         return isbns.length > 1 ? isbns[1] : isbns[0];
     }
 
@@ -203,27 +200,6 @@ public class BookSearchService {
         } catch (Exception e) {
             log.warn("날짜 파싱 실패: {}", dateString);
             return null;
-        }
-    }
-
-    /**
-     * 검색어 저장/업데이트
-     */
-    @Transactional
-    public void saveSearchKeyword(String keyword) {
-        try {
-            SearchKeyword searchKeyword = searchKeywordRepository.findByKeyword(keyword)
-                    .orElse(SearchKeyword.builder()
-                            .keyword(keyword)
-                            .searchCount(0)
-                            .build());
-
-            searchKeyword.incrementSearchCount();
-            searchKeywordRepository.save(searchKeyword);
-
-            log.debug("검색어 저장/업데이트: {}, 검색 횟수: {}", keyword, searchKeyword.getSearchCount());
-        } catch (Exception e) {
-            log.warn("검색어 저장 실패: {}", keyword, e);
         }
     }
 
