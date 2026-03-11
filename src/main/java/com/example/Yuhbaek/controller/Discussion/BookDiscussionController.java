@@ -456,7 +456,7 @@ public class BookDiscussionController {
     }
 
     /**
-     * ✅ 준비 상태 토글
+     * 준비 상태 토글
      */
     @Operation(summary = "준비 상태 토글",
             description = "참여자의 준비 상태를 변경합니다. 모든 참여자가 준비되면 토론이 시작됩니다.")
@@ -512,7 +512,7 @@ public class BookDiscussionController {
     }
 
     /**
-     * ✅ 강제 시작 (방장 권한)
+     * 강제 시작 (방장 권한)
      */
     @Operation(summary = "토론 강제 시작 (방장만 가능)",
             description = "방장이 준비 여부와 관계없이 토론을 강제로 시작합니다")
@@ -569,7 +569,7 @@ public class BookDiscussionController {
     }
 
     /**
-     * ✅ 토론방 참여자 목록 및 준비 상태 조회
+     * 토론방 참여자 목록 및 준비 상태 조회
      */
     @Operation(summary = "참여자 목록 및 준비 상태 조회",
             description = "토론방의 모든 참여자와 각자의 준비 상태를 조회합니다")
@@ -603,6 +603,62 @@ public class BookDiscussionController {
             Map<String, Object> result = new HashMap<>();
             result.put("success", false);
             result.put("message", "참여자 조회 중 오류가 발생했습니다");
+
+            return ResponseEntity.status(500).body(result);
+        }
+    }
+
+    /**
+     * 토론방 종료 (방장만 가능) + 참여자 전원 완독 처리
+     */
+    @Operation(summary = "토론방 종료 (방장만 가능)",
+            description = "토론방을 종료합니다. 방장만 가능하며, 참여자 전원이 자동으로 완독 처리됩니다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "종료 성공"),
+            @ApiResponse(responseCode = "403", description = "방장이 아님"),
+            @ApiResponse(responseCode = "404", description = "토론방을 찾을 수 없음")
+    })
+    @PostMapping("/{roomId}/finish")
+    public ResponseEntity<?> finishDiscussionRoom(
+            @Parameter(description = "토론방 ID", example = "1")
+            @PathVariable Long roomId,
+
+            @Parameter(description = "사용자 ID (방장)", example = "1")
+            @RequestParam Long userId) {
+
+        try {
+            discussionService.finishDiscussionRoom(roomId, userId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("message", "토론방이 종료되었습니다. 참여자 전원 완독 처리되었습니다.");
+
+            return ResponseEntity.ok(result);
+
+        } catch (IllegalArgumentException e) {
+            log.error("토론방 종료 실패 (not found): {}", e.getMessage());
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", e.getMessage());
+
+            return ResponseEntity.status(404).body(result);
+
+        } catch (IllegalStateException e) {
+            log.error("토론방 종료 실패 (권한/상태 오류): {}", e.getMessage());
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", e.getMessage());
+
+            return ResponseEntity.status(403).body(result);
+
+        } catch (Exception e) {
+            log.error("토론방 종료 실패: {}", e.getMessage(), e);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", false);
+            result.put("message", "토론방 종료 중 오류가 발생했습니다.");
 
             return ResponseEntity.status(500).body(result);
         }
