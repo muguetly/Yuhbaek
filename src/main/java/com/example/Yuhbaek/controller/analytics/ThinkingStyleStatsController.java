@@ -16,7 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
-@Tag(name = "통계/분석 API", description = "사고 스타일(자가진단) 통계")
+@Tag(name = "Analytics API", description = "사용자 통계 관련 API")
 public class ThinkingStyleStatsController {
 
     private final ThinkingStyleStatsService service;

@@ -7,6 +7,7 @@ import com.example.Yuhbaek.dto.catalog.BookSearchResponse;
 import com.example.Yuhbaek.dto.catalog.KakaoBookSearchApiResponse;
 import com.example.Yuhbaek.entity.catalog.AllBook;
 import com.example.Yuhbaek.repository.catalog.BookSerchRepository;
+import com.example.Yuhbaek.util.GenreNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,6 @@ public class CatalogService {
     private final KakaoBookClient kakaoBookClient;
     private final BookSerchRepository bookSerchRepository;
 
-    // ✅ 생성자 이름 = 클래스 이름(CatalogService) 이어야 함
     public CatalogService(KakaoBookClient kakaoBookClient, BookSerchRepository bookSerchRepository) {
         this.kakaoBookClient = kakaoBookClient;
         this.bookSerchRepository = bookSerchRepository;
@@ -40,7 +40,8 @@ public class CatalogService {
                         d.authors(),
                         d.publisher(),
                         d.thumbnail(),
-                        d.contents()
+                        d.contents(),
+                        "기타"
                 ))
                 .collect(Collectors.toList());
 
@@ -56,7 +57,6 @@ public class CatalogService {
 
     @Transactional
     public Long saveOrUpdate(BookSaveRequest req) {
-        // ✅ bookRepository -> bookSerchRepository 로 통일
         AllBook book = bookSerchRepository.findByIsbn(req.isbn())
                 .orElseGet(AllBook::new);
 
@@ -65,12 +65,11 @@ public class CatalogService {
         book.setAuthorText(req.authors() == null ? null : String.join(", ", req.authors()));
         book.setPublisher(req.publisher());
         book.setCoverUrl(req.thumbnail());
-        book.setGenre(req.genre());
+        book.setGenre(GenreNormalizer.normalizeFromClient(req.genre()));
 
         return bookSerchRepository.save(book).getId();
     }
 
-    /** 카카오 isbn: "ISBN10 ISBN13" 형태일 수 있어서 13자리 우선 */
     private String pickIsbn(String raw) {
         if (raw == null || raw.isBlank()) return null;
         String[] parts = raw.trim().split("\\s+");

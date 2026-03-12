@@ -25,7 +25,7 @@ public class AIChatSessionService {
                 .map(AIChatSession::getId)
                 .orElseGet(() -> {
                     Long lastMsgId = messageRepository.findTopByRoomIdOrderByMessageIdDesc(roomId)
-                            .map(m -> m.getMessageId())   // ✅ getId() -> getMessageId()
+                            .map(m -> m.getMessageId())
                             .orElse(0L);
 
                     AIChatSession open = AIChatSession.open(userId, roomId, lastMsgId);
@@ -40,7 +40,7 @@ public class AIChatSessionService {
                 .orElseThrow(() -> new IllegalArgumentException("진행 중인 채팅 세션이 없습니다."));
 
         Long lastMsgId = messageRepository.findTopByRoomIdOrderByMessageIdDesc(roomId)
-                .map(m -> m.getMessageId())  // ✅
+                .map(m -> m.getMessageId())
                 .orElse(0L);
 
         session.close(lastMsgId, AIChatSession.EndType.STOP);
@@ -58,7 +58,7 @@ public class AIChatSessionService {
                 .orElseThrow(() -> new IllegalArgumentException("진행 중인 채팅 세션이 없습니다."));
 
         Long lastMsgId = messageRepository.findTopByRoomIdOrderByMessageIdDesc(roomId)
-                .map(m -> m.getMessageId())  // ✅
+                .map(m -> m.getMessageId())
                 .orElse(0L);
 
         session.close(lastMsgId, AIChatSession.EndType.FINISH);
@@ -68,7 +68,6 @@ public class AIChatSessionService {
                 userId, roomId, session.getStartMessageId(), session.getEndMessageId()
         );
 
-        // 완독 처리(상태 변경)
         roomService.finishRoom(userId, roomId);
 
         return score;

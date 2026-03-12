@@ -11,7 +11,6 @@ public class EmotionLogCreateRequest {
     @NotNull
     private Integer emotionId;
 
-    // 선택: 프론트가 시간 보내면 사용, 없으면 서버 now()
     private LocalDateTime selectedAt;
 
     public Long getRoomId() { return roomId; }

@@ -1,7 +1,9 @@
 package com.example.Yuhbaek.controller.catalog;
 
+import com.example.Yuhbaek.dto.catalog.BookGenreResponse;
 import com.example.Yuhbaek.dto.catalog.BookSaveRequest;
 import com.example.Yuhbaek.dto.catalog.BookSearchResponse;
+import com.example.Yuhbaek.service.catalog.BookGenreService;
 import com.example.Yuhbaek.service.catalog.CatalogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -10,23 +12,23 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/books")
-@Tag(name = "책 API", description = "책 검색 및 책 정보 저장 관련 API")
+@RequiredArgsConstructor
+@Tag(name = "도서 API", description = "도서 검색, 장르 보강, 도서 정보 저장 API")
 public class BookController {
 
     private final CatalogService catalogService;
+    private final BookGenreService bookGenreService;
 
-    public BookController(CatalogService catalogService) {
-        this.catalogService = catalogService;
-    }
-
-    /** 책 검색 */
-    @Operation(summary = "책 검색", description = "카카오 책 API를 이용해 책을 검색합니다")
+    @Operation(summary = "도서 검색", description = "검색어로 도서를 검색합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "검색 성공")
     })
@@ -34,18 +36,27 @@ public class BookController {
     public ResponseEntity<BookSearchResponse> search(
             @Parameter(description = "검색어 (책 제목/저자/출판사)", example = "해리포터")
             @RequestParam @NotBlank String query,
-
             @Parameter(description = "페이지 번호 (1부터 시작)", example = "1")
             @RequestParam(defaultValue = "1") int page,
-
             @Parameter(description = "한 페이지당 조회 개수", example = "10")
             @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(catalogService.search(query, page, size));
     }
 
-    /** 책 저장 */
-    @Operation(summary = "책 저장", description = "선택한 책을 DB에 저장합니다")
+    @Operation(summary = "책 장르 보강", description = "ISBN13으로 알라딘 API를 조회해 표준 장르를 반환합니다")
+    @GetMapping("/genre")
+    public ResponseEntity<?> getGenre(
+            @RequestParam @NotBlank String isbn
+    ) {
+        BookGenreResponse data = bookGenreService.getGenreByIsbn(isbn);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", data
+        ));
+    }
+
+    @Operation(summary = "도서 정보 저장", description = "선택한 도서 정보를 DB에 저장합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "저장 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청")

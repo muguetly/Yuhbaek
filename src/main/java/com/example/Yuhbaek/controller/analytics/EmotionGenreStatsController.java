@@ -17,7 +17,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
-@Tag(name = "통계/분석 API", description = "감정 ↔ 장르 도넛 통계")
+@Tag(name = "Analytics API", description = "사용자 통계 관련 API")
 public class EmotionGenreStatsController {
 
     private final EmotionGenreStatsService service;
