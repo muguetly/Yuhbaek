@@ -5,13 +5,11 @@ import com.example.Yuhbaek.dto.aichat.MessageResponse;
 import com.example.Yuhbaek.dto.aichat.SendMessageRequest;
 import com.example.Yuhbaek.service.aichat.AIChatMessageService;
 import com.example.Yuhbaek.service.aichat.AIChatSessionService;
-import com.example.Yuhbaek.service.analytics.EmotionGateService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,14 +19,13 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/aichat/rooms/{roomId}/messages")
 @RequiredArgsConstructor
-@Tag(name = "AI 메시지 API", description = "AI 채팅 메시지 저장/조회 API")
+@Tag(name = "AI 채팅 메시지 API", description = "AI 채팅 메시지 전송 및 메시지 목록 조회 API")
 public class AIChatMessageController extends SessionAuthSupport {
 
     private final AIChatMessageService messageService;
-    private final EmotionGateService emotionGateService;
     private final AIChatSessionService sessionService;
 
-    @Operation(summary = "사용자 메시지 저장")
+    @Operation(summary = "메시지 전송", description = "사용자 메시지를 저장하고 AI 응답을 생성합니다.")
     @PostMapping
     public ResponseEntity<?> send(
             @PathVariable Long roomId,
@@ -42,15 +39,7 @@ public class AIChatMessageController extends SessionAuthSupport {
             return unauthorized();
         }
 
-        if (!emotionGateService.hasTodayEmotion(userId, roomId)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "success", false,
-                    "code", "EMOTION_REQUIRED",
-                    "message", "채팅을 시작하려면 오늘의 기분을 먼저 선택해주세요."
-            ));
-        }
-
-        // ✅ 중요: 채팅 시작 시 OPEN 세션이 없으면 자동 생성
+        // OPEN 세션이 없으면 자동 시작
         sessionService.startIfAbsent(userId, roomId);
 
         return ResponseEntity.ok(Map.of(
@@ -59,7 +48,7 @@ public class AIChatMessageController extends SessionAuthSupport {
         ));
     }
 
-    @Operation(summary = "메시지 목록 조회(이어하기)")
+    @Operation(summary = "메시지 목록 조회", description = "이전 메시지를 조회해 채팅을 이어서 진행할 수 있습니다.")
     @GetMapping
     public ResponseEntity<?> list(
             @PathVariable Long roomId,

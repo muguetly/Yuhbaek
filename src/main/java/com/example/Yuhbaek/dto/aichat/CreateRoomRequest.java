@@ -1,17 +1,27 @@
 package com.example.Yuhbaek.dto.aichat;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Getter @Setter
+@Getter
+@Setter
 @NoArgsConstructor
-
 public class CreateRoomRequest {
-    private String isbn;      // 필수
-    private String title;     // 필수
-    private String coverUrl;  // 선택
-    private String genre;     // 선택
-    private String authorText; // 선택
-    private String publisher;  // 선택
+
+    @NotBlank
+    private String isbn;
+
+    @NotBlank
+    private String title;
+
+    private String coverUrl;
+    private String genre;
+    private String authorText;
+    private String publisher;
+
+    @NotNull
+    private Integer emotionId;
 }

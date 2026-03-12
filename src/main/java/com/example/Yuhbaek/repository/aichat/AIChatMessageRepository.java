@@ -3,6 +3,7 @@ package com.example.Yuhbaek.repository.aichat;
 import com.example.Yuhbaek.entity.aichat.AIChatMessage;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -36,11 +37,12 @@ public interface AIChatMessageRepository extends JpaRepository<AIChatMessage, Lo
             @Param("end") LocalDateTime end
     );
 
-    // ✅ id -> messageId 로 변경
     Optional<AIChatMessage> findTopByRoomIdOrderByMessageIdDesc(Long roomId);
 
-    // ✅ id -> messageId 로 변경
     List<AIChatMessage> findByRoomIdAndMessageIdGreaterThanAndMessageIdLessThanEqualOrderByMessageIdAsc(
             Long roomId, Long startExclusive, Long endInclusive
     );
+
+    @Modifying
+    void deleteByRoomId(Long roomId);
 }

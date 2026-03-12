@@ -19,7 +19,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/analytics")
 @RequiredArgsConstructor
-@Tag(name = "통계/분석 API", description = "자가진단/마이페이지 통계를 위한 로그 저장 API")
+@Tag(name = "Analytics API", description = "사용자 통계 관련 API")
 public class EmotionLogController {
 
     private final EmotionLogService emotionLogService;
@@ -36,20 +36,27 @@ public class EmotionLogController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
-        EmotionLog saved = emotionLogService.save(loginUserPk, request);
+        try {
+            EmotionLog saved = emotionLogService.save(loginUserPk, request);
 
-        EmotionLogCreateResponse body = new EmotionLogCreateResponse(
-                saved.getId(),
-                saved.getRoomId(),
-                saved.getUserId(),
-                saved.getEmotionId(),
-                saved.getSelectedAt()
-        );
+            EmotionLogCreateResponse body = new EmotionLogCreateResponse(
+                    saved.getId(),
+                    saved.getRoomId(),
+                    saved.getUserId(),
+                    saved.getEmotionId(),
+                    saved.getSelectedAt()
+            );
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("data", body);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("data", body);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
     }
 }

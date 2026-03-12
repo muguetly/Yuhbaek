@@ -25,4 +25,6 @@ public interface ThinkingStyleScoreRepository extends JpaRepository<ThinkingStyl
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+
+    void deleteByUserIdAndRoomId(Long userId, Long roomId);
 }

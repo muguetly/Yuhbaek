@@ -58,4 +58,7 @@ public interface EmotionLogRepository extends JpaRepository<EmotionLog, Long> {
             LocalDateTime start,
             LocalDateTime end
     );
+
+    // 추가
+    void deleteByUserIdAndRoomId(Long userId, Long roomId);
 }
