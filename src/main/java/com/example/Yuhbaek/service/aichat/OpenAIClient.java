@@ -29,8 +29,7 @@ public class OpenAIClient {
     @Value("${openai.model:gpt-5}")
     private String model;
 
-    // ✅ 타임아웃/재시도 설정 (필요하면 properties로 빼도 됨)
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(75); // 60~90 추천
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(75);
     private static final String FALLBACK_TEXT =
             "앗 지금 답장이 조금 늦는다… 😭 방금 말한 거 이어서 한 번만 더 말해줄래?";
 
@@ -62,15 +61,15 @@ public class OpenAIClient {
                                 .flatMap(msg -> Mono.error(new RuntimeException("OpenAI API error: " + msg)))
                 )
                 .bodyToMono(Map.class)
-                .timeout(REQUEST_TIMEOUT) // ✅ 30초 -> 75초
+                .timeout(REQUEST_TIMEOUT)
                 .retryWhen(
-                        Retry.backoff(2, Duration.ofMillis(300)) // ✅ 2번 재시도
+                        Retry.backoff(2, Duration.ofMillis(300))
                                 .maxBackoff(Duration.ofSeconds(2))
                                 // 4xx(잘못된 요청) 같은 건 재시도해도 의미 없어서 제외하고 싶으면 여기서 분기 가능
                                 .filter(ex -> !(ex instanceof IllegalArgumentException))
                 )
                 .map(this::extractTextFromResponsesApi)
-                .onErrorReturn(FALLBACK_TEXT) // ✅ 타임아웃/네트워크 에러 등은 자연스러운 폴백
+                .onErrorReturn(FALLBACK_TEXT)
                 .block();
     }
 

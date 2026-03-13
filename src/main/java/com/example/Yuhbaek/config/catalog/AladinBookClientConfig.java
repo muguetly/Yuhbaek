@@ -12,13 +12,18 @@ public class AladinBookClientConfig {
 
     @Bean
     RestClient aladinRestClient(AladinBookProperties props) {
+        String rawBaseUrl = props.bestsellerUrl();
+        String apiBaseUrl = rawBaseUrl.endsWith("/")
+                ? rawBaseUrl + "ttb/api"
+                : rawBaseUrl + "/ttb/api";
+
         return RestClient.builder()
-                .baseUrl(props.baseUrl())
+                .baseUrl(apiBaseUrl)
                 .build();
     }
 
     @Bean
     AladinBookClient aladinBookClient(RestClient aladinRestClient, AladinBookProperties props) {
-        return new AladinBookClient(aladinRestClient, props.ttbKey());
+        return new AladinBookClient(aladinRestClient, props.key());
     }
 }
