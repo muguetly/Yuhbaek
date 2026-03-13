@@ -19,10 +19,13 @@ public final class GenreNormalizer {
 
         if (c.contains("에세이")) return "에세이";
 
-        if (c.contains("시집")) return "시";
-        if (c.contains("소설/시/희곡") && c.contains("시")) return "시";
-
+        // 소설을 먼저 잡기
         if (c.contains("소설")) return "소설";
+        if (c.contains("소설>")) return "소설";
+
+        // 시는 더 좁게 판단
+        if (c.contains("시집")) return "시";
+        if (c.contains(">시>") || c.endsWith(">시")) return "시";
 
         if (c.contains("자기계발") || c.contains("성공") || c.contains("처세") || c.contains("리더십")) {
             return "자기계발";
